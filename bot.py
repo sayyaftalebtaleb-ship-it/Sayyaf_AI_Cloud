@@ -5,7 +5,7 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-# 1. التوكين والـ API (تأكد من وضع التوكينات الخاصة بك هنا)
+# 1. التوكين والـ API (تأكد من وضع التوكينات الخاصة بك هنا بدقة)
 TELEGRAM_TOKEN = '7965345356:AAHbplcm8hEHB_cKcJRrNNnIxXtdaklPcfo' # ضع توكين تليجرام الكامل هنا
 GROQ_API_KEY = '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' # ضع مفتاح جروق الكامل هنا
 
@@ -22,8 +22,11 @@ def load_histories():
     return {}
 
 def save_histories():
-    with open(DB_FILE, 'w', encoding='utf-8') as f:
-        json.dump(chat_histories, f, ensure_ascii=False, indent=4)
+    try:
+        with open(DB_FILE, 'w', encoding='utf-8') as f:
+            json.dump(chat_histories, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"Error saving history: {e}")
 
 chat_histories = load_histories()
 
@@ -43,18 +46,28 @@ def handle_message(message):
         "Content-Type": "application/json"
     }
     
+    # التوجيهات المحصنة والمطورة بدمج فكرتك الذكية
     system_instruction = (
-        "أنت مساعد ذكي وودود اسمك 'Sayyaf AI' (سياف AI). تم تطويرك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
+        "أنت مساعد ذكي، محترف، ومسلم اسمك 'Sayyaf AI' (سياف AI). تم تطويرك وتصميمك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
         "[الهوية]\n"
-        "- عند سؤالك بشكل مباشر عن اسمك، أو من طورك، أو من صنعك: أجب بوضوح بأنك 'Sayyaf AI' وأن مطورك هو 'سياف طالب'.\n"
-        "- في أي سياق آخر: لا تذكر اسمك أو اسم مطورك تلقائيًا.\n\n"
-        "[سياسة اللغة]\n"
-        "1. التزم بلغة المستخدم.\n"
-        "2. الشرح بالعربية والمصطلحات التقنية أو الأمثلة الإنجليزية تترك كما هي دون ترجمة تكرارية."
+        "- عند سؤالك من أنت أو من طورك: أجب باعتزاز وفخر بأنك 'Sayyaf AI' ومطورك هو المبرمج اليمني 'سياف طالب'.\n"
+        "- لا تذكر هذه المعلومة إلا إذا سألك المستخدم عنها مباشرة.\n\n"
+        "[قواعد اللغة الصارمة]\n"
+        "1. لغتك الأساسية والرسمية هي اللغة العربية الفصحى المبسطة والسليمة.\n"
+        "2. يُحظر ويُمنع منعاً باتاً وقطعياً استخدام أي حروف أو كلمات روسية أو سيريلية (مثل вкус أو غيرها) داخل ردودك العربية.\n"
+        "3. المصطلحات التقنية والبرمجية الصرفة تُكتب بالإنجليزية فقط، وباقي الحوار عربي بالكامل.\n"
+        "4. التزم دائماً بالرد بنفس لغة رسالة المستخدم الأخيرة.\n\n"
+        "[جودة الكتابة]\n"
+        "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
+        "- إذا لم تكن متأكدًا من كلمة ما فأعد صياغة الجملة فوراً باللغة العربية الفصحى.\n"
+        "- راجع الرد قبل إرساله وتأكد أنه طبيعي، مفهوم، وخالٍ تماماً من التداخل اللغوي."
     )
     
+    # تحديث وتثبيت التوجيهات الجديدة لجميع المستخدمين في الذاكرة
     if user_id not in chat_histories:
         chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
+    else:
+        chat_histories[user_id][0] = {"role": "system", "content": system_instruction}
         
     chat_histories[user_id].append({"role": "user", "content": user_text})
     
@@ -63,7 +76,8 @@ def handle_message(message):
     
     payload = {
         "model": "llama-3.3-70b-versatile", 
-        "messages": chat_histories[user_id]
+        "messages": chat_histories[user_id],
+        "temperature": 0.3 # جعل الموديل حريصاً ومحاذراً جداً في اختيار الكلمات لتجنب اللغات الأخرى
     }
     
     try:
@@ -79,7 +93,7 @@ def handle_message(message):
     except Exception as e:
         bot.reply_to(message, "حدث خطأ أثناء الاتصال بالسيرفر.")
 
-# سيرفر ويب وهمي لكي يقبل موقع Render تشغيل البوت مجاناً 100%
+# سيرفر ويب وهمي لتشغيل البوت على خطة ريندر المجانية 100%
 class WebServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -94,9 +108,7 @@ def run_web_server():
     server.serve_forever()
 
 if __name__ == "__main__":
-    # تشغيل سيرفر الويب في خلفية منفصلة
     threading.Thread(target=run_web_server, daemon=True).start()
-    
     print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
     bot.infinity_polling()
-        
+    
