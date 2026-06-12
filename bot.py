@@ -30,6 +30,37 @@ def save_histories():
 
 chat_histories = load_histories()
 
+# التوجيهات الثابتة لـ Groq
+system_instruction = (
+    "أنت مساعد ذكي وودود اسمك 'Sayyaf AI' (سياف AI). تم تطويرك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
+    "[الهوية]\n"
+    "- عند سؤالك بشكل مباشر عن اسمك، أو من طورك، أو من صنعك: أجب بوضوح بأنك 'Sayyaf AI' وأن مطورك هو 'سياف طالب'.\n"
+    "- في أي سياق آخر: لا تذكر اسمك أو اسم مطورك تلقائيًا.\n\n"
+    "[سياسة معالجة اللغات والفصل بينها]\n"
+    "1. التزم بلغة المستخدم تماماً وبشكل دقيق وبنفس الحروف الأبجدية للغة المحادثة (عربي بالكامل أو إنجليزي بالكامل).\n"
+    "2. يُحظر تماماً خلط القواعد اللغوية: إذا طلب المستخدم شرح قاعدة في اللغة الإنجليزية، فاشرحها له باللغة العربية الفصحى كـ 'مادة تعليمية أجنبية'، ولا تزعم أبداً أن هذه الأزمنة الإنجليزية موجودة في قواعد اللغة العربية.\n"
+    "3. المصطلحات التقنية والبرمجية الصرفة وأكواد الكمبيوتر تُكتب بالإنجليزية في سياقها الصحيح دون ترجمة تكرارية.\n\n"
+    "[جودة الكتابة والدقة العلمية]\n"
+    "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
+    "- يُمنع منعاً باتاً وقطعياً إدخال أو حشر أي حروف، رموز، أو كلمات صينية، روسية، أو سيريلية عشوائية داخل النصوص.\n"
+    "- يُحظر تماماً كتابة، اقتراح، أو توليد أي روابط لمواقع إلكترونية أو قنوات تليجرام خارجية.\n"
+    "- راجع الرد وتأكد أنه طبيعي، مفهوم، ومكتوب بلغة واحدة متناسقة خالية تماماً من الهلوسة أو التداخل اللغوي."
+)
+
+# 🛠️ التعديل الأول: معالج خاص بأمر /start لعرض اسم المستخدم تلقائياً
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    user_id = str(message.chat.id)
+    user_name = message.from_user.first_name if message.from_user.first_name else "المستخدم"
+    
+    # تفريغ الذاكرة القديمة للمستخدم عند الضغط على start للبدء من جديد بنظافة
+    chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
+    save_histories()
+    
+    welcome_text = f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم؟"
+    bot.send_message(user_id, welcome_text)
+
+# معالج الرسائل النصية العادية
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     user_id = str(message.chat.id)
@@ -46,22 +77,6 @@ def handle_message(message):
         "Content-Type": "application/json"
     }
     
-    system_instruction = (
-        "أنت مساعد ذكي وودود اسمك 'Sayyaf AI' (سياف AI). تم تطويرك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
-        "[الهوية]\n"
-        "- عند سؤالك بشكل مباشر عن اسمك، أو من طورك، أو من صنعك: أجب بوضوح بأنك 'Sayyaf AI' وأن مطورك هو 'سياف طالب'.\n"
-        "- في أي سياق آخر: لا تذكر اسمك أو اسم مطورك تلقائيًا.\n\n"
-        "[سياسة معالجة اللغات والفصل بينها]\n"
-        "1. التزم بلغة المستخدم تماماً وبشكل دقيق وبنفس الحروف الأبجدية للغة المحادثة (عربي بالكامل أو إنجليزي بالكامل).\n"
-        "2. يُحظر تماماً خلط القواعد اللغوية: إذا طلب المستخدم شرح قاعدة في اللغة الإنجليزية، فاشرحها له باللغة العربية الفصحى كـ 'مادة تعليمية أجنبية'، ولا تزعم أبداً أن هذه الأزمنة الإنجليزية موجودة في قواعد اللغة العربية.\n"
-        "3. المصطلحات التقنية والبرمجية الصرفة وأكواد الكمبيوتر تُكتب بالإنجليزية في سياقها الصحيح دون ترجمة تكرارية.\n\n"
-        "[جودة الكتابة والدقة العلمية]\n"
-        "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
-        "- يُمنع منعاً باتاً وقطعياً إدخال أو حشر أي حروف، رموز، أو كلمات صينية، روسية، أو سيريلية عشوائية داخل النصوص.\n"
-        "- يُحظر تماماً كتابة، اقتراح، أو توليد أي روابط لمواقع إلكترونية أو قنوات تليجرام خارجية (مثل t.me أو غيرها).\n"
-        "- راجع الرد وتأكد أنه طبيعي، مفهوم، ومكتوب بلغة واحدة متناسقة خالية تماماً من الهلوسة أو التداخل اللغوي."
-    )
-    
     if user_id not in chat_histories:
         chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
     else:
@@ -69,13 +84,14 @@ def handle_message(message):
         
     chat_histories[user_id].append({"role": "user", "content": user_text})
     
-    if len(chat_histories[user_id]) > 31:
-        chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-30:]
+    # 🛠️ التعديل الثاني: الاحتفاظ بـ system_instruction + آخر 10 رسائل فقط في الذاكرة
+    if len(chat_histories[user_id]) > 11:
+        chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-10:]
     
     payload = {
         "model": "llama-3.3-70b-versatile", 
         "messages": chat_histories[user_id],
-        "temperature": 0.1  # خفض الحرارة لأقصى درجة لمنع الموديل من اختراع روابط أو نصوص عشوائية
+        "temperature": 0.1
     }
     
     try:
@@ -85,7 +101,6 @@ def handle_message(message):
             reply_text = result['choices'][0]['message']['content']
             chat_histories[user_id].append({"role": "assistant", "content": reply_text})
             save_histories()
-            # تعطيل معاينة الروابط في تليجرام كحماية إضافية للأمان
             bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
         else:
             bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
@@ -109,4 +124,4 @@ if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
     bot.infinity_polling()
-        
+    
