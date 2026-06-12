@@ -49,6 +49,77 @@ def handle_message(message):
         "- عند سؤالك بشكل مباشر عن اسمك، أو من طورك، أو من صنعك: أجب بوضوح بأنك 'Sayyaf AI' وأن مطورك هو 'سياف طالب'.\n"
         "- في أي سياق آخر: لا تذكر اسمك أو اسم مطورك تلقائيًا.\n\n"
         "[سياسة اللغة]\n"
+        "1. التزم بلغة المستخدم تماماً وبشكل دقيق وبنفس الحروف الأبجدية للغة المحادثة.\n"
+        "2. الشرح بالعربية والمصطلحات التقنية أو الأمثلة الإنجليزية تترك كما هي دون ترجمة تكرارية.\n\n"
+        "[جودة الكتابة والدقة العلمية]\n"
+        "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
+        "- إذا لم تكن متأكدًا من كلمة أو حقيقة علمية فأعد صياغة الجملة أو اعتذر بنضج.\n"
+        "- التزم بالحقائق العلمية واللغوية الصارمة، ولا تخترع قواعد أو أزمنة غير موجودة في اللغة العربية.\n"
+        "- يُمنع منعاً باتاً وقطعياً إدخال أي حروف، رموز، أو كلمات صينية (مثل 形起こ، 是否)، روسية، أو سيريلية عشوائية داخل النصوص. راجع النص للتأكد من خلوه تماماً من التداخل اللغوي قبل إرساله."
+    )
+    
+    if user_id not in chat_histories:
+        chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
+    else:
+        chat_histories[user_id][0] = {"role": "system", "content": system_instruction}
+        
+    chat_histories[user_id].append({"role": "user", "content": user_text})
+    
+    if len(chat_histories[user_id]) > 31:
+        chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-30:]
+    
+    payload = {
+        "model": "llama-3.3-70b-versatile", 
+        "messages": chat_histories[user_id],
+        "temperature": 0.2  # تبريد السيرفر لضمان الانضباط التام وعدم التخريف
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        if response.status_code == 200:
+            result = response.json()
+            reply_text = result['choices'][0]['message']['content']
+            chat_histories[user_id].append({"role": "assistant", "content": reply_text})
+            save_histories()
+            bot.reply_to(message, reply_text)
+        else:
+            bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
+    except Exception as e:
+        bot.reply_to(message, "حدث خطأ أثناء الاتصال بالسيرفر.")
+
+# سيرفر ويب وهمي لكي يقبل موقع Render تشغيل البوت مجاناً 100%
+class WebServerHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b"Sayyaf AI is Running Successfully!")
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), WebServerHandler)
+    print(f"Web Server started on port {port}")
+    server.serve_forever()
+
+if __name__ == "__main__":
+    threading.Thread(target=run_web_server, daemon=True).start()
+    print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
+    bot.infinity_polling()
+    except:
+        pass
+        
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    system_instruction = (
+        "أنت مساعد ذكي وودود اسمك 'Sayyaf AI' (سياف AI). تم تطويرك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
+        "[الهوية]\n"
+        "- عند سؤالك بشكل مباشر عن اسمك، أو من طورك، أو من صنعك: أجب بوضوح بأنك 'Sayyaf AI' وأن مطورك هو 'سياف طالب'.\n"
+        "- في أي سياق آخر: لا تذكر اسمك أو اسم مطورك تلقائيًا.\n\n"
+        "[سياسة اللغة]\n"
         "1. التزم بلغة المستخدم تماماً (إذا تحدث بالعربية أجب بالعربية، وإذا تحدث بالإنجليزية أجب بالإنجليزية).\n"
         "2. الشرح بالعربية والمصطلحات التقنية أو الأمثلة الإنجليزية تترك كما هي دون ترجمة تكرارية.\n\n"
         "[جودة الكتابة]\n"
