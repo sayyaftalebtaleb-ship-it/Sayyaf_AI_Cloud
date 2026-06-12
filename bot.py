@@ -5,7 +5,7 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-# 1. التوكين والـ API (تأكد من وضع التوكينات الخاصة بك هنا بدقة)
+# 1. التوكين والـ API (تأكد من وضع توكيناتك الخاصة الصحيحة هنا)
 TELEGRAM_TOKEN = '7965345356:AAHbplcm8hEHB_cKcJRrNNnIxXtdaklPcfo' # ضع توكين تليجرام الكامل هنا
 GROQ_API_KEY = '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' # ضع مفتاح جروق الكامل هنا
 
@@ -46,7 +46,7 @@ def handle_message(message):
         "Content-Type": "application/json"
     }
     
-    # التوجيهات المحصنة والمطورة بدمج فكرتك الذكية
+    # التوجيهات المحصنة علمياً ولغوياً
     system_instruction = (
         "أنت مساعد ذكي، محترف، ومسلم اسمك 'Sayyaf AI' (سياف AI). تم تطويرك وتصميمك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
         "[الهوية]\n"
@@ -57,13 +57,14 @@ def handle_message(message):
         "2. يُحظر ويُمنع منعاً باتاً وقطعياً استخدام أي حروف أو كلمات روسية أو سيريلية (مثل вкус أو غيرها) داخل ردودك العربية.\n"
         "3. المصطلحات التقنية والبرمجية الصرفة تُكتب بالإنجليزية فقط، وباقي الحوار عربي بالكامل.\n"
         "4. التزم دائماً بالرد بنفس لغة رسالة المستخدم الأخيرة.\n\n"
-        "[جودة الكتابة]\n"
+        "[جودة الكتابة والدقة العلمية]\n"
+        "- التزم بالحقائق العلمية والتاريخية واللغوية بدقة، ولا تقم بخلط قواعد اللغات الأخرى (كالإنجليزية) مع قواعد اللغة العربية (مثال: لا توجد أزمنة مستمرة في قواعد العربية).\n"
         "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
-        "- إذا لم تكن متأكدًا من كلمة ما فأعد صياغة الجملة فوراً باللغة العربية الفصحى.\n"
-        "- راجع الرد قبل إرساله وتأكد أنه طبيعي، مفهوم، وخالٍ تماماً من التداخل اللغوي."
+        "- إذا لم تكن متأكدًا من كلمة أو معلومة ما فأعد صياغة الجملة فوراً باللغة العربية الفصحى السليمة.\n"
+        "- راجع الرد قبل إرساله وتأكد أنه طبيعي، مفهوم، وخالٍ تماماً من التداخل اللغوي أو الأخطاء العلمية."
     )
     
-    # تحديث وتثبيت التوجيهات الجديدة لجميع المستخدمين في الذاكرة
+    # تحديث وتثبيت التوجيهات الجديدة في الذاكرة
     if user_id not in chat_histories:
         chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
     else:
@@ -71,13 +72,14 @@ def handle_message(message):
         
     chat_histories[user_id].append({"role": "user", "content": user_text})
     
-    if len(chat_histories[user_id]) > 31:
-        chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-30:]
+    # 🛠️ التعديل الجوهري: الاحتفاظ بـ نظام التوجيه + آخر 10 رسائل فقط (المجموع 11)
+    if len(chat_histories[user_id]) > 11:
+        chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-10:]
     
     payload = {
         "model": "llama-3.3-70b-versatile", 
         "messages": chat_histories[user_id],
-        "temperature": 0.3 # جعل الموديل حريصاً ومحاذراً جداً في اختيار الكلمات لتجنب اللغات الأخرى
+        "temperature": 0.3 
     }
     
     try:
