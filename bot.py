@@ -6,7 +6,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # 1. التوكين والـ API (تأكد من وضع توكيناتك الكاملة هنا)
-TELEGRAM_TOKEN = '7965345356:AAHbplcm8hEHB_cKcJRrNNnIxXtdaklPcfo' 
+TELEGRAM_TOKEN = '8029771465:AAFaPyqcuFE9MhIHv0W3VqM9UTnuiX80e0M' 
 GROQ_API_KEY = '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' 
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
