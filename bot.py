@@ -34,7 +34,7 @@ chat_histories = load_histories()
 system_instruction = (
     "أنت مساعد ذكي وودود اسمك 'Sayyaf AI' (سياف AI). تم تطويرك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
     "[الهوية]\n"
-    "- عند سؤالك بشكل مباشر عن اسمك، أو من طورك، أو من صنعك: أجب بوضوح بأنك 'Sayyaf AI' وأن مطورك هو 'سياف طالب'.\n"
+    "- عند سؤالك بشكل مباشر عن اسمك، أو من طورك, أو من صنعك: أجب بوضوح بأنك 'Sayyaf AI' وأن مطورك هو 'سياف طالب'.\n"
     "- في أي سياق آخر: لا تذكر اسمك أو اسم مطورك تلقائيًا.\n\n"
     "[سياسة معالجة اللغات والفصل بينها]\n"
     "1. التزم بلغة المستخدم تماماً وبشكل دقيق وبنفس الحروف الأبجدية للغة المحادثة (عربي بالكامل أو إنجليزي بالكامل).\n"
@@ -47,7 +47,7 @@ system_instruction = (
     "- راجع الرد وتأكد أنه طبيعي، مفهوم، ومكتوب بلغة واحدة متناسقة خالية تماماً من الهلوسة أو التداخل اللغوي."
 )
 
-# 🛠️ التعديل الأول: معالج خاص بأمر /start لعرض اسم المستخدم تلقائياً
+# 🛠️ معالج خاص بأمر /start لعرض اسم المستخدم تلقائياً
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id = str(message.chat.id)
@@ -84,7 +84,7 @@ def handle_message(message):
         
     chat_histories[user_id].append({"role": "user", "content": user_text})
     
-    # 🛠️ التعديل الثاني: الاحتفاظ بـ system_instruction + آخر 10 رسائل فقط في الذاكرة
+    # 🛠️ الاحتفاظ بـ system_instruction + آخر 10 رسائل فقط في الذاكرة
     if len(chat_histories[user_id]) > 11:
         chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-10:]
     
@@ -114,19 +114,23 @@ class WebServerHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"Sayyaf AI is Running Successfully!")
 
+    # 🛠️ التعديل الجديد: معالجة طلبات HEAD لـ UptimeRobot لمنع خطأ 501
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+
 def run_web_server():
-    # Render يفرض استخدام المنفذ الممرر في متغيرات البيئة تلقائياً
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(('0.0.0.0', port), WebServerHandler)
     print(f"Web Server started on port {port}")
     server.serve_forever()
 
 if __name__ == "__main__":
-    # تشغيل السيرفر في تفرع خلفي مستقل كـ Daemon لضمان عدم توقفه أثناء تشغيل البوت
     web_thread = threading.Thread(target=run_web_server)
     web_thread.daemon = True
     web_thread.start()
     
     print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
     bot.infinity_polling()
-            
+    
