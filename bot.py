@@ -110,18 +110,23 @@ def handle_message(message):
 class WebServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
         self.wfile.write(b"Sayyaf AI is Running Successfully!")
 
 def run_web_server():
+    # Render يفرض استخدام المنفذ الممرر في متغيرات البيئة تلقائياً
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(('0.0.0.0', port), WebServerHandler)
     print(f"Web Server started on port {port}")
     server.serve_forever()
 
 if __name__ == "__main__":
-    threading.Thread(target=run_web_server, daemon=True).start()
+    # تشغيل السيرفر في تفرع خلفي مستقل كـ Daemon لضمان عدم توقفه أثناء تشغيل البوت
+    web_thread = threading.Thread(target=run_web_server)
+    web_thread.daemon = True
+    web_thread.start()
+    
     print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
     bot.infinity_polling()
-    
+            
