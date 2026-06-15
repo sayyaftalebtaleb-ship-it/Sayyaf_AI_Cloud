@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # 1. التوكين والـ API (تأكد من وضع توكيناتك الكاملة هنا)
 TELEGRAM_TOKEN = '8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c' 
-GROQ_API_KEY = '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' 
+GROQ_API_KEY = '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' 
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 DB_FILE = 'chat_histories.json'
@@ -47,7 +47,7 @@ system_instruction = (
     "- راجع الرد وتأكد أنه طبيعي، مفهوم، ومكتوب بلغة واحدة متناسقة خالية تماماً من الهلوسة أو التداخل اللغوي."
 )
 
-# 🛠️ معالج أمر /start لعرض اسم المستخدم تلقائياً
+# 🛠️ التعديل الأول: معالج خاص بأمر /start لعرض اسم المستخدم تلقائياً
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id = str(message.chat.id)
@@ -57,7 +57,7 @@ def send_welcome(message):
     chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
     save_histories()
     
-    welcome_text = f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم؟"
+    welcome_text = f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم?"
     bot.send_message(user_id, welcome_text)
 
 # معالج الرسائل النصية العادية
@@ -84,7 +84,7 @@ def handle_message(message):
         
     chat_histories[user_id].append({"role": "user", "content": user_text})
     
-    # الاحتفاظ بـ system_instruction + آخر 10 رسائل فقط في الذاكرة
+    # 🛠️ التعديل الثاني: الاحتفاظ بـ system_instruction + آخر 10 رسائل فقط في الذاكرة
     if len(chat_histories[user_id]) > 11:
         chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-10:]
     
@@ -101,18 +101,15 @@ def handle_message(message):
             reply_text = result['choices'][0]['message']['content']
             chat_histories[user_id].append({"role": "assistant", "content": reply_text})
             save_histories()
-            # محاولة الإرسال بـ Markdown وفي حال فشل الرموز يتم الإرسال كنص عادي تلقائياً
+            # التعديل الآمن هنا: محاولة الإرسال بـ Markdown وفي حال فشل الرموز يتم الإرسال كنص عادي تلقائياً
             try:
                 bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
             except:
                 bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
         else:
-            # ✅ التعديل: عرض تفاصيل الخطأ الحقيقية
-            error_detail = f"Status: {response.status_code}\n{response.text[:300]}"
-            bot.reply_to(message, f"❌ حدث خطأ مؤقت في السيرفر:\n{error_detail}")
-    except Exception as e:
-        # ✅ التعديل: عرض نص الاستثناء
-        bot.reply_to(message, f"❌ استثناء أثناء الاتصال: {str(e)[:300]}")
+            bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
+    except:
+        bot.reply_to(message, "حدث خطأ أثناء الاتصال بالسيرفر.")
 
 class WebServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -121,6 +118,7 @@ class WebServerHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"Sayyaf AI is Running Successfully!")
 
+    # تم الحفاظ على الكود وإضافة الدالة المطلوبة لـ UptimeRobot هنا فقط
     def do_HEAD(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
