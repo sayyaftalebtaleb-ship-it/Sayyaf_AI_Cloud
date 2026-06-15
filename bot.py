@@ -38,7 +38,7 @@ system_instruction = (
     "- في أي سياق آخر: لا تذكر اسمك أو اسم مطورك تلقائيًا.\n\n"
     "[سياسة معالجة اللغات والفصل بينها]\n"
     "1. التزم بلغة المستخدم تماماً وبشكل دقيق وبنفس الحروف الأبجدية للغة المحادثة (عربي بالكامل أو إنجليزي بالكامل).\n"
-    "2. يُحظر تماماً خلط القواعد اللغوية: إذا طلب المستخدم شرح قاعدة في اللغة الإنجليزية، فاشرحها له باللغة العربية الفصحى كـ 'مادة تعليمية أجنبية'، ولا تزعم أبداً أن هذه الأزمنة الإنجليزية موجودة في قواعد اللغة العربية.\n"
+    "2. يُحظر تماماً خلط القواعد اللغوية: إذا طلب المستخدم شرح قاعدة في اللغة الإنجليزية, فاشرحها له باللغة العربية الفصحى كـ 'مادة تعليمية أجنبية', ولا تزعم أبداً أن هذه الأزمنة الإنجليزية موجودة في قواعد اللغة العربية.\n"
     "3. المصطلحات التقنية والبرمجية الصرفة وأكواد الكمبيوتر تُكتب بالإنجليزية في سياقها الصحيح دون ترجمة تكرارية.\n\n"
     "[جودة الكتابة والدقة العلمية]\n"
     "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
@@ -101,7 +101,8 @@ def handle_message(message):
             reply_text = result['choices'][0]['message']['content']
             chat_histories[user_id].append({"role": "assistant", "content": reply_text})
             save_histories()
-            bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
+            # التعديل هنا: تم إضافة parse_mode لتظهر الأكواد في حاوية قابلة للنسخ التلقائي
+            bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
         else:
             bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
     except:
@@ -130,4 +131,3 @@ if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
     bot.infinity_polling()
-    
