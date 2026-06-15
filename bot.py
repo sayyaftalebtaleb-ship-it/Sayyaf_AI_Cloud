@@ -6,14 +6,13 @@ import threading
 from flask import Flask
 from threading import Thread
 
-# 1. التوكين والـ API (تأكد من وضع توكيناتك في منصة Render كـ Environment Variables)
-TELEGRAM_TOKEN = os.environ.get('8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c') 
-GROQ_API_KEY = os.environ.get('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') 
+# ضع التوكينات هنا مباشرة كما كنت تفعل سابقاً (سيعمل البوت فوراً)
+TELEGRAM_TOKEN = '8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c' 
+GROQ_API_KEY = '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' 
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 DB_FILE = 'chat_histories.json'
 
-# إعداد Flask للبقاء مستيقظاً (Keep-Alive)
 app = Flask('')
 
 @app.route('/')
@@ -46,7 +45,6 @@ def save_histories():
 
 chat_histories = load_histories()
 
-# التوجيهات الثابتة لـ Groq
 system_instruction = (
     "أنت مساعد ذكي وودود اسمك 'Sayyaf AI' (سياف AI). تم تطويرك بواسطة المبرمج اليمني سياف طالب (Sayyaf Taleb).\n\n"
     "[الهوية]\n"
@@ -59,7 +57,7 @@ system_instruction = (
     "[جودة الكتابة والدقة العلمية]\n"
     "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
     "- يُمنع منعاً باتاً وقطعياً إدخال أو حشر أي حروف, رموز, أو كلمات صينية, روسية, أو سيريلية عشوائية داخل النصوص.\n"
-    "- يُحظر تماماً كتابة, اقتراح, أو توليد أي روابط لمواقع إلكترونية أو قنوات تليجرام خارجية.\n"
+    "- يُمنع تماماً كتابة, اقتراح, أو توليد أي روابط لمواقع إلكترونية أو قنوات تليجرام خارجية.\n"
     "- راجع الرد وتأكد أنه طبيعي, مفهوم, ومكتوب بلغة واحدة متناسقة خالية تماماً من الهلوسة أو التداخل اللغوي."
 )
 
@@ -67,28 +65,17 @@ system_instruction = (
 def send_welcome(message):
     user_id = str(message.chat.id)
     user_name = message.from_user.first_name if message.from_user.first_name else "المستخدم"
-    
     chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
     save_histories()
-    
-    welcome_text = f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم?"
-    bot.send_message(user_id, welcome_text)
+    bot.send_message(user_id, f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم?")
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     user_id = str(message.chat.id)
     user_text = message.text
     
-    try:
-        bot.send_chat_action(user_id, 'typing')
-    except:
-        pass
-        
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     
     if user_id not in chat_histories:
         chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
@@ -96,15 +83,10 @@ def handle_message(message):
         chat_histories[user_id][0] = {"role": "system", "content": system_instruction}
         
     chat_histories[user_id].append({"role": "user", "content": user_text})
-    
     if len(chat_histories[user_id]) > 11:
         chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-10:]
     
-    payload = {
-        "model": "llama-3.3-70b-versatile", 
-        "messages": chat_histories[user_id],
-        "temperature": 0.1
-    }
+    payload = {"model": "llama-3.3-70b-versatile", "messages": chat_histories[user_id], "temperature": 0.1}
     
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=30)
@@ -124,6 +106,5 @@ def handle_message(message):
 
 if __name__ == "__main__":
     keep_alive() 
-    print("البوت يعمل الآن سحابياً وبشكل مستقر...")
     bot.infinity_polling()
     
