@@ -101,14 +101,26 @@ def handle_message(message):
             reply_text = result['choices'][0]['message']['content']
             chat_histories[user_id].append({"role": "assistant", "content": reply_text})
             save_histories()
-            # التعديل الآمن هنا: محاولة الإرسال بـ Markdown وفي حال فشل الرموز يتم الإرسال كنص عادي تلقائياً
-            try:
-                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
-            except:
-                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
+            
+            # التعديل الآمن هنا: تقسيم الرسالة وتصحيح استثناءات الماركدوان
+            max_length = 4000
+            if len(reply_text) > max_length:
+                # إرسال الرسالة على أجزاء إذا كانت طويلة جداً
+                for i in range(0, len(reply_text), max_length):
+                    bot.send_message(user_id, reply_text[i:i+max_length], disable_web_page_preview=True)
+            else:
+                # محاولة الإرسال بـ Markdown
+                try:
+                    bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
+                except Exception as e:
+                    print(f"Markdown Parsing Error: {e}") 
+                    # في حال فشل التنسيق، الإرسال كنص عادي
+                    bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
         else:
             bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
-    except:
+            print(f"API Error: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"General/Connection Error: {e}")
         bot.reply_to(message, "حدث خطأ أثناء الاتصال بالسيرفر.")
 
 class WebServerHandler(BaseHTTPRequestHandler):
@@ -134,3 +146,4 @@ if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
     bot.infinity_polling()
+        
