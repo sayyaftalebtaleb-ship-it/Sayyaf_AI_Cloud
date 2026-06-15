@@ -101,8 +101,11 @@ def handle_message(message):
             reply_text = result['choices'][0]['message']['content']
             chat_histories[user_id].append({"role": "assistant", "content": reply_text})
             save_histories()
-            # التعديل هنا: تم إضافة parse_mode لتظهر الأكواد في حاوية قابلة للنسخ التلقائي
-            bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
+            # التعديل الآمن هنا: محاولة الإرسال بـ Markdown وفي حال فشل الرموز يتم الإرسال كنص عادي تلقائياً
+            try:
+                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
+            except:
+                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
         else:
             bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
     except:
