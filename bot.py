@@ -3,14 +3,30 @@ import requests
 import json
 import os
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from flask import Flask
+from threading import Thread
 
-# 1. التوكين والـ API (تأكد من وضع توكيناتك الكاملة هنا)
-TELEGRAM_TOKEN = '8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c' 
-GROQ_API_KEY = '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' 
+# 1. التوكين والـ API (تأكد من وضع توكيناتك في منصة Render كـ Environment Variables)
+TELEGRAM_TOKEN = os.environ.get('8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c') 
+GROQ_API_KEY = os.environ.get('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') 
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 DB_FILE = 'chat_histories.json'
+
+# إعداد Flask للبقاء مستيقظاً (Keep-Alive)
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Sayyaf AI is Alive!", 200
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_flask)
+    t.start()
 
 def load_histories():
     if os.path.exists(DB_FILE):
@@ -42,25 +58,22 @@ system_instruction = (
     "3. المصطلحات التقنية والبرمجية الصرفة وأكواد الكمبيوتر تُكتب بالإنجليزية في سياقها الصحيح دون ترجمة تكرارية.\n\n"
     "[جودة الكتابة والدقة العلمية]\n"
     "- لا تستخدم كلمات مخترعة أو رموزًا غير مفهومة.\n"
-    "- يُمنع منعاً باتاً وقطعياً إدخال أو حشر أي حروف، رموز، أو كلمات صينية، روسية، أو سيريلية عشوائية داخل النصوص.\n"
-    "- يُحظر تماماً كتابة، اقتراح، أو توليد أي روابط لمواقع إلكترونية أو قنوات تليجرام خارجية.\n"
-    "- راجع الرد وتأكد أنه طبيعي، مفهوم، ومكتوب بلغة واحدة متناسقة خالية تماماً من الهلوسة أو التداخل اللغوي."
+    "- يُمنع منعاً باتاً وقطعياً إدخال أو حشر أي حروف, رموز, أو كلمات صينية, روسية, أو سيريلية عشوائية داخل النصوص.\n"
+    "- يُحظر تماماً كتابة, اقتراح, أو توليد أي روابط لمواقع إلكترونية أو قنوات تليجرام خارجية.\n"
+    "- راجع الرد وتأكد أنه طبيعي, مفهوم, ومكتوب بلغة واحدة متناسقة خالية تماماً من الهلوسة أو التداخل اللغوي."
 )
 
-# 🛠️ التعديل الأول: معالج خاص بأمر /start لعرض اسم المستخدم تلقائياً
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id = str(message.chat.id)
     user_name = message.from_user.first_name if message.from_user.first_name else "المستخدم"
     
-    # تفريغ الذاكرة القديمة للمستخدم عند الضغط على start للبدء من جديد بنظافة
     chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
     save_histories()
     
     welcome_text = f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم?"
     bot.send_message(user_id, welcome_text)
 
-# معالج الرسائل النصية العادية
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     user_id = str(message.chat.id)
@@ -84,7 +97,6 @@ def handle_message(message):
         
     chat_histories[user_id].append({"role": "user", "content": user_text})
     
-    # 🛠️ التعديل الثاني: الاحتفاظ بـ system_instruction + آخر 10 رسائل فقط في الذاكرة
     if len(chat_histories[user_id]) > 11:
         chat_histories[user_id] = [chat_histories[user_id][0]] + chat_histories[user_id][-10:]
     
@@ -101,49 +113,17 @@ def handle_message(message):
             reply_text = result['choices'][0]['message']['content']
             chat_histories[user_id].append({"role": "assistant", "content": reply_text})
             save_histories()
-            
-            # التعديل الآمن هنا: تقسيم الرسالة وتصحيح استثناءات الماركدوان
-            max_length = 4000
-            if len(reply_text) > max_length:
-                # إرسال الرسالة على أجزاء إذا كانت طويلة جداً
-                for i in range(0, len(reply_text), max_length):
-                    bot.send_message(user_id, reply_text[i:i+max_length], disable_web_page_preview=True)
-            else:
-                # محاولة الإرسال بـ Markdown
-                try:
-                    bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
-                except Exception as e:
-                    print(f"Markdown Parsing Error: {e}") 
-                    # في حال فشل التنسيق، الإرسال كنص عادي
-                    bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
+            try:
+                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='HTML')
+            except:
+                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
         else:
             bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
-            print(f"API Error: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"General/Connection Error: {e}")
+    except:
         bot.reply_to(message, "حدث خطأ أثناء الاتصال بالسيرفر.")
 
-class WebServerHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(b"Sayyaf AI is Running Successfully!")
-
-    # تم الحفاظ على الكود وإضافة الدالة المطلوبة لـ UptimeRobot هنا فقط
-    def do_HEAD(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-
-def run_web_server():
-    port = int(os.environ.get("PORT", 8080))
-    server = HTTPServer(('0.0.0.0', port), WebServerHandler)
-    print(f"Web Server started on port {port}")
-    server.serve_forever()
-
 if __name__ == "__main__":
-    threading.Thread(target=run_web_server, daemon=True).start()
-    print("البوت يعمل الآن سحابياً وبشكل مجاني تماماً...")
+    keep_alive() 
+    print("البوت يعمل الآن سحابياً وبشكل مستقر...")
     bot.infinity_polling()
-        
+    
