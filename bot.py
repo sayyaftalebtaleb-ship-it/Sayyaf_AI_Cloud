@@ -5,9 +5,15 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-# 1. التوكين والـ API (تأكد من وضع توكيناتك الكاملة هنا)
+# 1. التوكين والـ API (ضع هنا جميع مفاتيح Groq الخاصة بك)
 TELEGRAM_TOKEN = '8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c' 
-GROQ_API_KEY = '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' 
+GROQ_API_KEYS = [
+    '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',
+    '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',
+    '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',
+    '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',
+    # أضف المزيد من المفاتيح هنا ...
+]
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 DB_FILE = 'chat_histories.json'
@@ -72,10 +78,6 @@ def handle_message(message):
         pass
         
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
     
     if user_id not in chat_histories:
         chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
@@ -94,22 +96,39 @@ def handle_message(message):
         "temperature": 0.1
     }
     
+    # 🔁 التعديل الجديد: استخدام عدة مفاتيح مع التبديل التلقائي عند الفشل
+    success = False
+    for api_key in GROQ_API_KEYS:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            if response.status_code == 200:
+                success = True
+                break  # المفتاح يعمل، نخرج من الحلقة
+            # أي ستيتس كود غير 200 (مثل 401، 429 ...) ننتقل للمفتاح التالي بصمت
+        except:
+            # فشل في الاتصال نفسه (مشكلة شبكة مثلاً) ننتقل أيضاً للمفتاح التالي
+            continue
+    
+    if not success:
+        # جميع المفاتيح تعطلت، لا نرسل أي خطأ تقني، فقط رسالة مهذبة
+        bot.reply_to(message, "عذراً، لا يمكن معالجة طلبك حالياً. يرجى المحاولة لاحقاً.")
+        return
+
+    # معالجة الرد الناجح (تم اختيار مفتاح صالح)
+    result = response.json()
+    reply_text = result['choices'][0]['message']['content']
+    chat_histories[user_id].append({"role": "assistant", "content": reply_text})
+    save_histories()
+    
+    # الإرسال الآمن: تجربة Markdown أولاً ثم النص العادي
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        if response.status_code == 200:
-            result = response.json()
-            reply_text = result['choices'][0]['message']['content']
-            chat_histories[user_id].append({"role": "assistant", "content": reply_text})
-            save_histories()
-            # التعديل الآمن هنا: محاولة الإرسال بـ Markdown وفي حال فشل الرموز يتم الإرسال كنص عادي تلقائياً
-            try:
-                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
-            except:
-                bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
-        else:
-            bot.reply_to(message, "حدث خطأ مؤقت في السيرفر.")
+        bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True, parse_mode='Markdown')
     except:
-        bot.reply_to(message, "حدث خطأ أثناء الاتصال بالسيرفر.")
+        bot.send_message(user_id, reply_text, reply_to_message_id=message.message_id, disable_web_page_preview=True)
 
 class WebServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
