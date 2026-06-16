@@ -3,7 +3,15 @@ import requests
 import json
 import os
 import threading
+import re  # ✅ تمت إضافة الاستيراد
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+# ✅ تعريف دالة تنظيف النص
+def clean_text(text):
+    text = re.sub(r'[\u4e00-\u9fff]+', '', text)  # إزالة الصينية
+    text = re.sub(r'[\u0400-\u04FF]+', '', text)  # إزالة الروسية
+    return text
 
 # 1. التوكين والـ API (ضع هنا جميع مفاتيح Groq الخاصة بك)
 TELEGRAM_TOKEN = '8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c' 
@@ -121,6 +129,7 @@ def handle_message(message):
     # معالجة الرد الناجح (تم اختيار مفتاح صالح)
     result = response.json()
     reply_text = result['choices'][0]['message']['content']
+    reply_text = clean_text(reply_text)  # ✅ تنظيف النص من الصينية والروسية
     chat_histories[user_id].append({"role": "assistant", "content": reply_text})
     save_histories()
     
