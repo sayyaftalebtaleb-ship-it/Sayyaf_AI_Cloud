@@ -14,7 +14,7 @@ def clean_text(text):
     return text
 
 # 1. التوكين والـ API (ضع هنا جميع مفاتيح Groq الخاصة بك)
-TELEGRAM_TOKEN = '8749887745:AAFa3barQrVDXWJeBzbNR_qAhzVg3ne7U9c' 
+TELEGRAM_TOKEN = '8749887745:AAFuy24ohqdD_nS5X9YVcTXcQLhcnkQKb1c' 
 GROQ_API_KEYS = [
     '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',
     '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',
