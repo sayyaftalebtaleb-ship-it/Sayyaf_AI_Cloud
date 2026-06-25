@@ -71,7 +71,7 @@ def send_welcome(message):
     chat_histories[user_id] = [{"role": "system", "content": system_instruction}]
     save_histories()
     
-    welcome_text = f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم?"
+    welcome_text = f"مرحبا ({user_name}) كيف يمكنني مساعدتك اليوم؟"
     bot.send_message(user_id, welcome_text)
 
 # معالج الرسائل النصية العادية
