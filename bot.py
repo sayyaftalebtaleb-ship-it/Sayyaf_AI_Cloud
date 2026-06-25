@@ -16,10 +16,10 @@ def clean_text(text):
 # 1. التوكين والـ API (ضع هنا جميع مفاتيح Groq الخاصة بك)
 TELEGRAM_TOKEN = '8749887745:AAFuy24ohqdD_nS5X9YVcTXcQLhcnkQKb1c' 
 GROQ_API_KEYS = [
-    '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',
-    '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',
-    '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',
-    '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',
+    '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',
+    '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',
+    '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',
+    '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',
     # أضف المزيد من المفاتيح هنا ...
 ]
 
